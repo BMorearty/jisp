@@ -3,7 +3,7 @@
 Brian Morearty
 May 10, 2006 (with major additions July, 2007)
 
-Jisp is a new dialect of Lisp that I invented.
+Jisp is a new dialect of Lisp that I invented.  It is implemented in JavaScript.
 
 I realized that JavaScript has so many similarities with Lisp
 that it would be easy to write a JavaScript-based Lisp language that uses the browser's JavaScript parser
