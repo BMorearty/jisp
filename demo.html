@@ -1,0 +1,363 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <title>Jisp - Lisp implementation in JavaScript</title>
+
+  <script type="text/javascript" src="jisp.js"></script>
+  
+  <link rel="stylesheet" href="jisp.css" type="text/css" />
+  
+</head>
+<body>
+  <h1>Jisp - a dialect of Lisp in JavaScript</h1>
+  <p>Brian Morearty<br />May 10, 2006 (with major additions July, 2007)</p>
+  <p>Jisp is a new dialect of Lisp that I invented.</p>
+  <p>I realized that JavaScript has so many similarities with Lisp
+  that it would be easy to write a JavaScript-based Lisp language that uses the browser's JavaScript parser
+  rather than writing my own parser. It turned out to be even easier than I expected--it took me an evening to 
+  create the basic language. (It's not a complete Lisp implementation, of course.) It looks a little different 
+  from most Lisp dialects. (Uses brackets instead of parentheses and uses commas between list elements) because
+  of its basis in JavaScript.</p>
+  <p>
+    Here is a sample Jisp expression that adds two numbers. This expression does not
+    have side-effects (such as UI output)--it just returns a result:</p>
+  <pre>  [plus, 7, 3]</pre>
+  <pre></pre>
+  <p>I have tested it in IE6, IE7, and Firefox 1.5 and 2.0.</p>
+  <p>To evaluate a Jisp expression or sequence of expressions, call the jisp() function from JavaScript. Here are some more samples.</p>
+  <span id="content" />
+  <script type="text/javascript" >
+    //<![CDATA[
+    // The style param can have these members:
+    //   header=true          Put the output in <h2> tags
+    //   preformatted=true    Put the output in <pre> tags
+    //   indented=true        Indent the output in a <blockquote>
+    //   input=true           Prepend the word "code: "
+    //   output=true          Prepend the word "output: "
+    // header and preformatted are mutually exclusive.
+    // input and output are mutually exclusive.
+    function append(style, html)
+    {
+      var content = document.getElementById("content");
+      //var open = style && style.indented ? "<blockquote>" : style && style.preformatted ? "" : style && style.header ? "<h2>" : "<p>";
+      //var close = style && style.indented ? "</blockquote>" : style && style.preformatted ? "" : style && style.header ? "</h2>" : "</p>";
+      var open = style && style.indented ? '<table><tr><td width="30px"></td><td>' : style && style.preformatted ? "" : style && style.header ? "<h2>" : "<p>";
+      var close = style && style.indented ? '</td></tr></table>' : style && style.preformatted ? "" : style && style.header ? "</h2>" : "</p>";
+      var pre = style && style.preformatted ? "<pre>" : "";
+      var closepre = style && style.preformatted ? "</pre>" : "";
+      var prefix = style && style.input ? "<p>code:<p/>" : style && style.output ? "<p>output:<p/>" : "";
+      content.innerHTML += prefix + open + pre + html + closepre + close;
+    }
+    
+    var appendHeader = function(html)
+    {
+      jisp(
+        ['append', { header: true }, html]
+      )
+    }
+    
+    //=========================================================================
+    appendHeader("Calling a JavaScript function from Jisp")
+    jisp(
+      ['append', { }, 
+       "Jisp can call functions that were defined in JavaScript. JavaScript can also call functions that were defined (uh, defun'd) in Jisp. This page has a JavaScript-defined function called 'append' that was defined in the normal JavaScript syntax:"]
+    )
+    jisp(
+      ['append', { indented: true, preformatted: true, input: true},
+       "function append(style, html)\n\
+{\n\
+  ...\n\
+}"]
+    )
+    jisp(
+      ['append', { },
+        "We can call the append function from Jisp just like any other function:"]
+    )
+    append(
+      { indented: true, preformatted: true, input: true },
+      "jisp(\n\
+  ['append',\n\
+   { indented: true, preformatted: true, output: true },\n\
+   \"Text goes here...\"]\n\
+)"
+    )
+    jisp( 
+      ['append', 
+       { indented: true, preformatted: true, output: true },
+       "Text goes here..."]
+    )
+    
+    //=========================================================================
+    appendHeader("Calling a built-in Jisp function (minus) from Jisp")
+    jisp(
+      ['append', { }, 
+       "Jisp comes with a set of predefined functions. These include Lisp-like function such as <code>car</code> and <code>cdr</code>, as well as mathematical functions and others. Here is how you call a built-in math function from Jisp"]
+    )
+    jisp(   
+      [append, { indented: true, preformatted: true, input: true }, "[minus, 3, 1]"]
+    )
+    append(
+      { indented: true, preformatted: true, output: true }, 
+      jisp( [minus, 3, 1] )
+    )
+    
+    //=========================================================================
+    appendHeader("Calling a function with its name in quotes ('+')")
+    jisp(
+      ['append', { }, 
+       "Sometimes you need to call a function whose name already has a meaning in JavaScript, such as '+'. To call such a function, simply put its name in quotes."]
+    )
+    jisp(
+      ['append', { indented: true, preformatted: true, input: true }, "['+', 1, 2]"]
+    )
+    append(
+      { indented: true, preformatted: true, output: true },
+      jisp( ['+', 1, 2] )
+    )
+    jisp(
+      ['append', { }, 
+       "If your function name does not have punctuation or is not a reserved JavaScript word, you can still put its name in quotes if you like. The following two calls are equivalent:"]
+    )
+    append(
+      { indented: true, preformatted: true, input: true }, 
+      "jisp( [ minus , 3, 1] ) \n\
+jisp( ['minus', 3, 1] ) "
+    )
+    
+    // TODO: mention document.write
+
+    //=========================================================================
+    appendHeader("Creating and calling a user-defined function")
+    jisp(
+      ['document.write', "This is how you create your own function:"]
+    )
+    jisp(
+      ['append', { indented: true, preformatted: true, input: true },
+       "[defun,                       // Define a function \n\
+ 'functionname',              // Put the name in quotes \n\
+ ['param1', 'param2', etc.],  // Then a comma-separated list of parameters in quotes. \n\
+ [body goes here]             // This is the body of the function. \n\
+ ]"]
+    )
+    jisp(
+      ['document.write', "<p>Note that the function name has to be in quotes in the function definition but once it is defined, the calls don't need quotes.</p><p>The parameters (x in this case) must also be in quotes, both in the formal parameter list as well as in all references to them, to prevent a JavaScript error.</p>"]
+    )
+    jisp(
+      ['append', { indented: true, preformatted: true, input: true },
+       "[defun,           // Define a function \n\
+ 'inc',           // whose name is inc \n\
+ ['x'],           // and that has one parameter named x. \n\
+ [plus, 'x', 1]]  // This is the body of the function "]
+    )
+    jisp(
+      [defun, 'inc', ['x'], [plus, 'x', 1]]
+    )
+    jisp(
+      ['document.write', "Now call the function."]
+    )
+    append(
+      { indented: true, preformatted: true, input: true },
+      "jisp( [inc, 5] )"
+    )
+    append(
+      { indented: true, preformatted: true, output: true },
+      jisp( [inc, 5] )
+    )
+
+    //=========================================================================
+    appendHeader("Declare a function using [defun] but write its implementation in JavaScript")
+    jisp(
+      [append, { },
+       "You can use [defun] to declare a function but still write the body in JavaScript. Here's how. In this example I'm declaring a function called Sqrt that calls JavaScript's Math.sqrt function."]
+    )
+    jisp(
+      [append, { indented: true, preformatted: true, input: true},
+      "[defun, \n\
+ 'sqrt', \n\
+ function(x) \n\
+ { \n\
+   return Math.sqrt(x) \n\
+ } \n\
+]"]
+    )
+    jisp(
+      [defun, 
+       'sqrt', 
+       function(x) 
+       { 
+         return Math.sqrt(x) 
+       }
+      ]
+    )
+    jisp(
+      [append, { },
+       "Now call it from Jisp."]
+    )
+    jisp(
+      [append, { indented: true, preformatted: true, input: true},
+      "jisp( [sqrt, 6.25] )"]
+    )
+    append(
+      { indented: true, preformatted: true, output: true },
+      jisp( [sqrt, 6.25] )
+    )
+    
+    //=========================================================================
+    appendHeader("Quote a list using 'qt' so its first element is treated as a value, not a function")
+    jisp(
+      [append, { },
+       "First, define a function. I used JavaScript syntax but wrote its implementation in Jisp. This function takes a <b>single</b> argument. The argument is a list of numbers."]
+    )
+    jisp(
+      [append, { indented: true, preformatted: true, input: true },
+      "    function sumlist(list) \n\
+    { \n\
+      return jisp( \n\
+          ['if', ['null', [cdr, list]], \n\
+                 [car, list], \n\
+                 [plus, [car, list], [sumlist, [cdr, list]]] \n\
+          ] \n\
+      ) \n\
+    } "
+      ]
+    )
+    function sumlist(list)
+    {
+      return jisp(
+          ['if', ['null', [cdr, list]], 
+                 [car, list], 
+                 [plus, [car, list], [sumlist, [cdr, list]]]
+          ]
+      )
+    }
+// TOOD: Get this working with defun
+//    jisp(
+//      [append, { indented: true, preformatted: true, input: true },
+//      "[defun, \n\
+// 'sumlist',\n\
+// function (list) \n\
+// { \n\
+//   var result = 0; \n\
+//   for (var i = 0; i < list.length; i++) \n\
+//     result = result + list[i] \n\
+//   return result \n\
+// } \n\
+//]"
+//      ]
+//    jisp(
+//      [defun, 'sumlist', ['list'],
+//        ['if', ['null', [cdr, 'list']], 
+//               [car, 'list'], 
+//               [plus, [car, 'list'], ['sumlist', [cdr, 'list']]]
+//        ]
+//      ]
+//    )
+    jisp(
+      [append, { }, "Now call it, passing a single list of four numbers to it. Use '<i>qt</i>' to quote a list (i.e. don't treat its first element as a function call)."]
+    )
+    jisp(
+      [append, { indented: true, preformatted: true, input: true },
+      "[sumlist, [qt, 1, 2, 3, 4]]"]
+    )
+    append(
+      { indented: true, preformatted: true, output: true },
+      jisp( [sumlist, [qt, 1, 2, 3, 4]] )
+    )
+
+    //=========================================================================
+    appendHeader("Call a function that takes any number of arguments")
+    jisp(
+      [append, { }, "First, define a function that takes an undefined number of arguments. This function returns the sum of all its arguments. Contrast this with the 'sumlist' function in the previous example--this new function takes multiple arguments instead of a single list of values. (But I cheated by implementing the function in JavaScript--there isn't yet a way to access a variable-argument list for a function written using [defun])."]
+    )
+    jisp(
+      [append, { indented: true, preformatted: true, input: true },
+      "[defun, 'sum', \n\
+ function () \n\
+ { \n\
+   var result = 0; \n\
+   for (var i = 0; i < arguments.length; i++) \n\
+     result = result + arguments[i] \n\
+   return result \n\
+ }]"]
+    )
+    jisp(
+      [defun, 'sum',
+        function () 
+        {
+          var result = 0; 
+          for (var i = 0; i < arguments.length; i++) 
+            result = result + arguments[i]
+          return result 
+        }]
+    )
+    jisp(
+      [append, { }, "Now call it, passing a series of five numbers to it:"]
+    )
+    append(
+      { indented: true, preformatted: true, input: true },
+      "jisp( [sum, 1, 2, 3, 4, 5] )"
+    )
+    append(
+      { indented: true, preformatted: true, output: true },
+      jisp( [sum, 1, 2, 3, 4, 5] )
+    )
+
+    //=========================================================================
+    appendHeader("Summary")
+    append( { }, "Jisp is a work in progress. I've done a lot of cool stuff but there's still more that I'd like to implement. Just a few examples of unimplemented language features are: <ul><li>Multi-line functions</li><li>A 'setq' function to assign a value to a variable</li><li>A way to pass a variable number of arguments to a [defun]'d function</li></ul>" )
+    append( { }, 'You can see the Jisp source code. Download it at <a href="http://github.com/BMorearty/jisp">http://github.com/BMorearty/jisp</a>.' )
+    append( { }, "I'd love to hear your thoughts. Please send feedback and comments to <b>Jisp@<img width='0' height='0'>ducklet.com</b>")
+    
+    /*
+
+    //=========================================================================
+    TODO: this one works but it's confusing to the reader. Replace it when I've got
+    multi-line functions working.
+    
+    jisp(
+      [
+       [append, { }, "<b>Calling multiple jisp functions in sequence. The sentence you are reading is the result of the first call....</b>"],
+       [append, { }, "<b>....And this sentence is the result of the second call.</b>"]
+      ]
+    )
+
+    TODO: fix multi-statement functions and implement a 'setq' function that works
+    
+    //=========================================================================
+    appendHeader("Writing multi-statement function")
+    jisp(
+      ['document.write', "To write a function whose body has more than one statement, put multiple lists in the body. Separate them with commas:"]
+    )
+    jisp(
+      ['append', { indented: true, preformatted: true, input: true },
+       "[defun, \n\
+ 'incrementandsquare', \n\
+ ['x'], \n\
+ [ \n\
+  [plus, 'x', 1], \n\
+  [times, 'x', 'x'] \n\
+ ]"]
+    )
+    jisp(
+      [defun,
+       'incrementandsquare', 
+       ['x'], 
+       [ times, [plus, 'x', 1], [plus, 'x', 1] ]
+      ]
+    )
+    append(
+      { indented: true, preformatted: true, input: true },
+      "jisp( [incrementandsquare, 5] )<br/><b>*** TO DO: FIX THE RESULT!!! ***</b>"
+    )
+    append(
+      { indented: true, preformatted: true, output: true },
+      jisp( [incrementandsquare, 5] )
+    )
+
+   */
+
+
+    //]]>
+  </script>
+</body>
+</html>

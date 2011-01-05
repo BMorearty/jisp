@@ -1,0 +1,26 @@
+/* This CSS file is for demo.html.  It's not required for Jisp. */
+body 
+{
+	font-family: Verdana, Trebuchet MS, Arial, ITC Avant Garde Gothic, Univers, Futura, ITC Stone Sans, Gill Sans, Akzidenz Grotesk, Helvetica, sans-serif; 
+	font-size: 10pt;
+}
+
+pre
+{
+	font-family: Courier New, Lucida Console, Courier;
+}
+
+code
+{
+	font-family: Courier New, Lucida Console, Courier;
+}
+
+h1
+{
+	font-size: 22pt;
+}
+
+h2
+{
+	font-size: 12pt;
+}
